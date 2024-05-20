@@ -330,6 +330,8 @@ func commandBuild(build Build) *exec.Cmd {
 		"--rm=true",
 		"-f", build.Dockerfile,
 		"-t", build.TempTag,
+		// experiment to make go fast
+		"--output=type=image,compression=zstd,compression-level=-7",
 	}
 
 	args = append(args, build.Context)
