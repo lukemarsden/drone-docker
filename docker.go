@@ -209,15 +209,20 @@ func (p Plugin) Exec() error {
 		}
 	}
 
-	cmds = append(cmds, commandBuild(p.Build)) // docker build
-
+	// XXX Dryrun mode is broken now
 	for _, tag := range p.Build.Tags {
-		cmds = append(cmds, commandTag(p.Build, tag)) // docker tag
-
-		if !p.Dryrun {
-			cmds = append(cmds, commandPush(p.Build, tag)) // docker push
-		}
+		cmds = append(cmds, commandBuild(p.Build, tag)) // docker build and push
 	}
+
+	/*
+		for _, tag := range p.Build.Tags {
+			cmds = append(cmds, commandTag(p.Build, tag)) // docker tag
+
+			if !p.Dryrun {
+				cmds = append(cmds, commandPush(p.Build, tag)) // docker push
+			}
+		}
+	*/
 
 	// execute all commands in batch mode.
 	for _, cmd := range cmds {
@@ -324,14 +329,15 @@ func commandInfo() *exec.Cmd {
 }
 
 // helper function to create the docker build command.
-func commandBuild(build Build) *exec.Cmd {
+func commandBuild(build Build, tag string) *exec.Cmd {
+	target := fmt.Sprintf("%s:%s", build.Repo, tag)
 	args := []string{
 		"build",
 		"--rm=true",
 		"-f", build.Dockerfile,
-		"-t", build.TempTag,
+		"-t", target,
 		// experiment to make go fast
-		"--output=type=image,compression=zstd,compression-level=-7",
+		"--output=type=image,compression=zstd,compression-level=3,force-compression=true,push=true",
 	}
 
 	args = append(args, build.Context)
